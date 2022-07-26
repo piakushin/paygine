@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Transaction {
     #[serde(rename = "type")]
     pub kind: Kind,
@@ -9,18 +9,6 @@ pub struct Transaction {
     #[serde(rename = "tx")]
     pub id: u32,
     pub amount: Option<f64>,
-    #[serde(skip)]
-    pub disputed: bool,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Kind {
-    Deposit,
-    Withdrawal,
-    Dispute,
-    Resolve,
-    Chargeback,
 }
 
 impl Transaction {
@@ -28,4 +16,14 @@ impl Transaction {
         self.amount
             .ok_or_else(|| anyhow!("tx #{}: missing amount field", self.id))
     }
+}
+
+#[derive(Debug, Deserialize, Clone, Copy)]
+#[serde(rename_all = "lowercase")]
+pub enum Kind {
+    Deposit,
+    Withdrawal,
+    Dispute,
+    Resolve,
+    Chargeback,
 }

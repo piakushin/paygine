@@ -1,10 +1,7 @@
-use std::{
-    env::args,
-    io::{stdout, Write},
-    path::PathBuf,
-};
+use std::{env::args, io::stdout, path::PathBuf};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Context, Error, Result};
+use csv::Writer;
 
 use crate::engine::Engine;
 
@@ -15,6 +12,8 @@ mod client;
 mod engine;
 mod transaction;
 
+pub type MaybeError = Option<Error>;
+
 fn main() -> Result<()> {
     env_logger::init();
     info!("Toy Payment Engine");
@@ -22,13 +21,18 @@ fn main() -> Result<()> {
     let input = input_file_from_args()?;
     info!("Input: {}", input.display());
 
-    let mut engine = Engine::default();
-    let output = engine
-        .process(&input)
+    let engine = Engine::new(input).with_context(|| "invalid input")?;
+    let clients = engine
+        .process()
         .with_context(|| "processing input failed")?;
     info!("Process finished");
 
-    stdout().write_all(&output)?;
+    let mut writer = Writer::from_writer(stdout());
+    for client in clients.values() {
+        writer.serialize(client)?;
+    }
+    writer.flush()?;
+
     info!("Result printed");
 
     Ok(())
